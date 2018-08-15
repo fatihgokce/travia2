@@ -1,0 +1,23 @@
+[
+    {
+      "Id": 1,
+      "order": 1,
+      "question": "Aşşağıdakilerden hangisinde yeşil rengi vardır?",
+      "suggestions": ["akhisar","trabzon","fener","beşiktaş"],
+      "correct":1
+    },
+    {
+        "Id": 2,
+        "order": 2,
+        "question": "Eski Yunan'lı düşünür Platon'a Arap dünyasında verilen ad nedir?",
+        "suggestions": ["Sokrates","Eflatun","Aristotales","Farabi"],
+        "correct":2
+    },
+    {
+      "Id": 3,
+      "order": 3,
+      "question": "Aşağıdakilerden hangisi ressam değildir?",
+      "suggestions": ["Monet","Collina","Leonardo Da Vinci","Rafael"],
+      "correct":2
+  }
+]

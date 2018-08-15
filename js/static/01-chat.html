@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body { font-family: Tahoma, Geneva, sans-serif; text-align: center; }
+    </style>
+
+    <!-- dummy Symbol polyfill -->
+    <script>if (typeof(Symbol)==="undefined") { window.Symbol = function(arg) { return arg; } }</script>
+
+    <!-- colyseus.js client (npm run bundle-colyseus-client) -->
+    <script type="text/javascript" src="colyseus.js"></script>
+
+  </head>
+  <body>
+    <h1>
+      <a href="https://github.com/gamestdio/colyseus-examples"><img src="https://rawgit.com/gamestdio/colyseus/master/media/header.png" height="100" alt="colyseus" /></a>
+    </h1>
+
+    <p>This room doesn't use the room's state. It just broadcast messages through "broadcast" method.</p>
+    <h2>User name</h2>
+    <input type="text" value="" id="txtUserName">
+    <input type="button" onclick="putMoney()" value="put money">
+    <strong>Messages</strong><br>
+
+    <form id="form">
+      <input type="text" id="input" value="" />
+      <input type="submit" value="send" />
+    </form>
+  
+    <div id="messages"></div>
+
+    <script>
+      var host = window.document.location.host.replace(/:.*/, '');
+
+      var client = new Colyseus.Client(location.protocol.replace("http", "ws") + host + (location.port ? ':'+location.port : ''));
+      let name=myFunction();
+      console.log(name);
+      var room = client.join("chat",{name:name});
+     
+      room.onJoin.add(function () {
+        console.log("joined");
+         
+      });
+
+      room.onStateChange.addOnce(function(state) {
+        console.log("initial room state:", state);
+      
+      });
+
+      // new room state
+      room.onStateChange.add(function(state) {
+        // this signal is triggered on each patch
+      });
+   
+      // listen to patches coming from the server
+      room.onMessage.add(function(message) {
+        var p = document.createElement("p");
+        const key=Object.keys(message)[0];
+        let m=message[key];
+        if(message.userName)
+           m=message.userName;
+        console.log(m);
+        p.innerHTML = m;
+        document.querySelector("#messages").appendChild(p);
+      });
+      room.listen("players/:id/:prop", function(change) {
+        console.log(change);
+     
+      });
+      // send message to room on submit
+      document.querySelector("#form").onsubmit = function(e) {
+        e.preventDefault();
+
+        var input = document.querySelector("#input");
+
+        console.log("input:", input.value);
+
+        // send data to room
+        room.send({ message: input.value });
+
+        // clear input
+        input.value = "";
+      }
+      function sendMessage(room,name){
+        room.send({message:name});
+      }
+      function putMoney(){
+        room.send({put_money:parseInt(document.querySelector("#txtUserName").value)});
+      }
+      function myFunction() { 
+     if((navigator.userAgent.indexOf("Opera") || navigator.userAgent.indexOf('OPR')) != -1 ) 
+    {
+     
+        return "opera";
+    }
+    else if(navigator.userAgent.indexOf("Chrome") != -1 )
+    {
+        return 'Chrome';
+    }
+    else if(navigator.userAgent.indexOf("Safari") != -1)
+    {
+      return 'Safari';
+    }
+    else if(navigator.userAgent.indexOf("Firefox") != -1 ) 
+    {
+         return 'Firefox';
+    }
+    else if((navigator.userAgent.indexOf("MSIE") != -1 ) || (!!document.documentMode == true )) //IF IE > 10
+    {
+      return 'IE'; 
+    }  
+    else 
+    {
+       return 'unknown';
+    }
+    }
+    </script>
+  </body>
+</html>
