@@ -63,6 +63,7 @@ export class ChatRoom extends Room {
         //console.log("BasicRoom received message from", client.sessionId, ":", data);
         //console.log(this.state);
         //this.broadcast(`(${ client.sessionId }) ${ data.message }`);
+        console.log(data);
         if(data.message){
             this.send(this.findOpponent(client),{message:data.message});
             //this.broadcast(`${this.state.players[client.sessionId].name} `+data.message);
@@ -72,6 +73,7 @@ export class ChatRoom extends Room {
             console.log(this.state.players[client.id]);
         }
         if(data.answer){
+            console.log(this.state.players[client.id]);
             this.state.players[client.id].answer=data.answer;
         }
        

@@ -11,7 +11,7 @@ import { StateHandlerRoom } from "./rooms/02-state-handler";
 import { AuthRoom } from "./rooms/03-auth";
 import { CreateOrJoinRoom } from "./rooms/04-create-or-join-room";
 
-const port = Number(process.env.PORT || 2657);
+const port = Number(process.env.PORT || 2658);
 const app = express();
 
 // Attach WebSocket Server on HTTP Server.

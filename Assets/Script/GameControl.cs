@@ -33,7 +33,7 @@ public class GameControl : MonoBehaviour {
     public Text txtTimerPane3;
     public Text txtQuestion;
     public string serverName = "localhost";
-    public string port = "2657";
+    public string port = "2658";
     public string roomName = "chat";//"chat";
     public GameObject question;
     public GameObject canvas;
@@ -90,7 +90,7 @@ public class GameControl : MonoBehaviour {
         currCountdownValue = countdownValue;
         while (currCountdownValue > 0)
         {
-            Debug.Log("Countdown: " + currCountdownValue);
+           
             yield return new WaitForSeconds(1.0f);
             textBox.text = currCountdownValue.ToString();
             currCountdownValue--;
@@ -279,11 +279,12 @@ public class GameControl : MonoBehaviour {
             Player player = players[change.path["id"]];
             SetObjectProperty(change.path["prop"], change.value, player);
         }
-        if (playerState == PlayerState.PutMoney)
+        if (playerState == PlayerState.PutMoney && players.Count==2)
         {
             //ihale bittimi kontrol ediliyor
             Debug.Log("into put money cc:"+players.Count);
             bool tenderOver = true;
+            
             foreach (var kvp in players.ToArray())
             {
                 var player= kvp.Value;
@@ -325,7 +326,7 @@ public class GameControl : MonoBehaviour {
         Player mostPutMoneyPlayer = FindMostPutMoneyPlayer();
         txtMessagePanel3.text = mostPutMoneyPlayer.name + " için soru geliyor...";
         txtQuestion.text = questionTxt.question;
-        StartCountdown(txtTimerPane3, 10);
+        StartCoroutine(StartCountdown(txtTimerPane3, 10));
     }
     private Player FindMostPutMoneyPlayer()
     {
