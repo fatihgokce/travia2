@@ -1029,7 +1029,7 @@ MonoBehaviour:
   txtMessagePanel3: {fileID: 893919363}
   txtTimerPane3: {fileID: 1792752579}
   txtQuestion: {fileID: 620424513}
-  serverName: localhost
+  serverName: 192.168.1.33
   port: 2658
   roomName: chat
   question: {fileID: 1650466258157962, guid: 677814eac953a8e49ac72b744907fa55, type: 2}

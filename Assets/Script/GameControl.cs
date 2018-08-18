@@ -32,7 +32,7 @@ public class GameControl : MonoBehaviour {
     public Text txtMessagePanel3;
     public Text txtTimerPane3;
     public Text txtQuestion;
-    public string serverName = "localhost";
+    public string serverName = "192.168.1.33";//"localhost";
     public string port = "2658";
     public string roomName = "chat";//"chat";
     public GameObject question;

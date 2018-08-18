@@ -26,6 +26,7 @@ export class ChatRoom extends Room {
             players: {}
           });
         this.loadQuestions();
+        this.metadata=new Date();
     }
 
     onJoin (client:Client,options) {
@@ -59,20 +60,21 @@ export class ChatRoom extends Room {
         delete this.state.players[client.id];
     }
 
-    onMessage (client:Client, data) {
+    onMessage (client:Client, data:object) {
         //console.log("BasicRoom received message from", client.sessionId, ":", data);
         //console.log(this.state);
         //this.broadcast(`(${ client.sessionId }) ${ data.message }`);
-        console.log(data);
-        if(data.message){
+       
+        if(data.hasOwnProperty('message')){
             this.send(this.findOpponent(client),{message:data.message});
             //this.broadcast(`${this.state.players[client.sessionId].name} `+data.message);
         }
-        if(data.put_money){          
+        if(data.hasOwnProperty('put_money')){          
             this.state.players[client.id].putMoney=data.put_money;
             console.log(this.state.players[client.id]);
         }
-        if(data.answer){
+        if(data.hasOwnProperty('answer')){
+            console.log("içerde");
             console.log(this.state.players[client.id]);
             this.state.players[client.id].answer=data.answer;
         }

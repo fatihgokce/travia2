@@ -21,6 +21,7 @@
     <h2>User name</h2>
     <input type="text" value="" id="txtUserName">
     <input type="button" onclick="putMoney()" value="put money">
+    <input type="button" onclick="getAvailableRooms()" value="available room">
     <strong>Messages</strong><br>
 
     <form id="form">
@@ -115,6 +116,13 @@
        return 'unknown';
     }
     }
+    var md;
+    function getAvailableRooms() {
+          client.getAvailableRooms('chat', function(rooms, err) {
+                console.log(rooms);
+                md=rooms[0].metadata;
+          });
+      }
     </script>
   </body>
 </html>
