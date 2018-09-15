@@ -41,11 +41,12 @@ public class GameControl : MonoBehaviour {
     //public Sprite[] moneySprites;
     public GameObject ImgPanel2Player;
     public GameObject ImgPanel2Rival;
+    public GameObject ImgFooter;
     List<GameObject> listQuestions;
    
     Dictionary<string, Player> players = new Dictionary<string, Player>();
     //public float waitTime = 1f;
-    int counter = 0;
+   
     //public int timeLeft = 60; //Seconds Overall
     //
 
@@ -54,10 +55,26 @@ public class GameControl : MonoBehaviour {
     float currCountdownValue;
     int clientCount = 0;
     Assets.Question questionTxt;
-    void Start()
-    {
-      
+    float distanceLoadingPanel;
+    void initBeforeQuestion(){
+        var rs = ImgFooter.GetComponent<RectTransform>();
        
+        ImgFooter.transform.localPosition = new Vector3(ImgFooter.transform.localPosition.x,-565.7f, 0);
+
+        rs.sizeDelta = new Vector2(rs.sizeDelta.x, 65.5f);
+        listPanels[0].SetActive(true);
+        listPanels[1].SetActive(false);
+        listPanels[2].SetActive(false);
+        room.Send(new { nextQuestion = true });
+       
+    }
+    void Start()
+    {   
+
+        Vector3 vec2 = ImgFooter.transform.localPosition;
+        vec2.y = 169.6f;
+        distanceLoadingPanel = Vector3.Distance(ImgFooter.transform.localPosition,vec2)-65.5f/2;
+        Debug.Log(distanceLoadingPanel);
         listQuestions = new List<GameObject>();
         txtPlayerName.text = PlayerPrefs.GetString("userName");
      
@@ -74,8 +91,7 @@ public class GameControl : MonoBehaviour {
 
     // Update is called once per frame
     void Update()
-    {
-
+    {     
     }
     void BtnPutMoney()
     {
@@ -83,6 +99,7 @@ public class GameControl : MonoBehaviour {
         var s= go.transform.transform.GetChild(0).GetComponent<Text>().text;
         playerState = PlayerState.PutMoney;
         room.Send(new { put_money=int.Parse(s)});
+        initBeforeQuestion();
       
     }
     public IEnumerator StartCountdown(Text textBox,float countdownValue = 10)
@@ -91,10 +108,18 @@ public class GameControl : MonoBehaviour {
         while (currCountdownValue > 0)
         {
            
-            yield return new WaitForSeconds(1.0f);
+            var rs = ImgFooter.GetComponent<RectTransform>();
+            //rT.sizeDelta = new Vector2(rT.sizeDelta.x, rT.sizeDelta.y + 0.5f);
+            float incAmount = distanceLoadingPanel/countdownValue;
+            ImgFooter.transform.localPosition = new Vector3(ImgFooter.transform.localPosition.x, ImgFooter.transform.localPosition.y + (incAmount / 2), 0);
+
+            rs.sizeDelta = new Vector2(rs.sizeDelta.x, rs.sizeDelta.y + incAmount);
+
             textBox.text = currCountdownValue.ToString();
             currCountdownValue--;
+            yield return new WaitForSeconds(1.0f);
         }
+        initBeforeQuestion();
     }
     IEnumerator AddListeners()
     {

@@ -18,6 +18,7 @@ export class ChatRoom extends Room {
     name:string="";
     questions:Array<Question>;
     countQuestion:number=0;
+
     onInit (options) {
        //console.log("BasicRoom created!", options);
         
@@ -57,6 +58,7 @@ export class ChatRoom extends Room {
 
     onLeave (client:Client) {
         //this.broadcast(`${ client.sessionId } left.`);
+        console.log(`${client.id} leave room`);
         delete this.state.players[client.id];
     }
 
@@ -66,6 +68,7 @@ export class ChatRoom extends Room {
         //this.broadcast(`(${ client.sessionId }) ${ data.message }`);
        
         if(data.hasOwnProperty('message')){
+            //Send a message to a particular client.
             this.send(this.findOpponent(client),{message:data.message});
             //this.broadcast(`${this.state.players[client.sessionId].name} `+data.message);
         }
@@ -78,10 +81,16 @@ export class ChatRoom extends Room {
             console.log(this.state.players[client.id]);
             this.state.players[client.id].answer=data.answer;
         }
+        if(data.hasOwnProperty('nextQuestion')){            
+            this.countQuestion+=1;
+            if(this.questions.length==this.countQuestion)
+                this.countQuestion=0;
+            this.broadcast({question:JSON.stringify(this.questions[this.countQuestion])});
+        }
        
     }
   
-    onDispose () {
+    onDispose () {        
         console.log("Dispose BasicRoom");
     }
     findOpponent(currentClient:Client):Client{
