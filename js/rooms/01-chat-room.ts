@@ -17,38 +17,50 @@ export class ChatRoom extends Room {
     maxClients = 2;
     name:string="";
     questions:Array<Question>;
-    countQuestion:number=0;
-
+    private countQuestion:number=0;
+    private questionSend=false;
+    private askedQuestions=[];
     onInit (options) {
        //console.log("BasicRoom created!", options);
         
-        //console.log(this.name);
+        //console.log(this.name)
         this.setState({
-            players: {}
+            players: {},
+            winGame:null,
+            questionCount:0
           });
         this.loadQuestions();
         this.metadata=new Date();
     }
 
     onJoin (client:Client,options) {
-        //this.broadcast(`${ client.sessionId } joined.`);
+        //this.broadcast(`${ client.sessionId } joined.`)
         // if(this.name){
-        //     this.broadcast(`${ this.name }`);
+        //     this.broadcast(`${ this.name }`)
         // }
-      
+        //this.state.players[client.id].name=options.name;
         this.state.players[client.id] = {
             name: options.name,
-            answer: false,
-            putMoney:0
+            answer: {},
+            putMoney:{}           
           };
-    
-        if(this.clients.length==2){
-            
+        // let that=this;
+        // this.clock.setTimeout(function(){
+        //     that.state.questionCount=1;
+        //     console.log("timer runned");
+        // },2000); 
+        if(this.clients.length==2){        
+            this.questionSend=true;
+           
             this.sendMessageToOpponent({userName:options.name},client);
             this.sendQuestion(client);
+            
         }
            
         
+    }
+    nextQuestion(){
+
     }
     requestJoin (options: any) {
         //console.log("requst join");
@@ -57,23 +69,26 @@ export class ChatRoom extends Room {
     }
 
     onLeave (client:Client) {
-        //this.broadcast(`${ client.sessionId } left.`);
-        console.log(`${client.id} leave room`);
+        this.broadcast(`${ client.sessionId } left`)
         delete this.state.players[client.id];
+        console.log(`${client.id} leave roo`);
+        //this.disconnect();
+       
     }
 
     onMessage (client:Client, data:object) {
         //console.log("BasicRoom received message from", client.sessionId, ":", data);
         //console.log(this.state);
         //this.broadcast(`(${ client.sessionId }) ${ data.message }`);
-       
+       console.log(data);
         if(data.hasOwnProperty('message')){
             //Send a message to a particular client.
             this.send(this.findOpponent(client),{message:data.message});
             //this.broadcast(`${this.state.players[client.sessionId].name} `+data.message);
         }
-        if(data.hasOwnProperty('put_money')){          
-            this.state.players[client.id].putMoney=data.put_money;
+        if(data.hasOwnProperty('put_money')){   
+                  
+            this.state.players[client.id].putMoney[this.countQuestion]=data.put_money;
             console.log(this.state.players[client.id]);
         }
         if(data.hasOwnProperty('answer')){
@@ -91,7 +106,7 @@ export class ChatRoom extends Room {
     }
   
     onDispose () {        
-        console.log("Dispose BasicRoom");
+        console.log("Dispose BasicRoom1");
     }
     findOpponent(currentClient:Client):Client{
         return this.clients.find(cli=>{
@@ -107,14 +122,14 @@ export class ChatRoom extends Room {
     private sendQuestion(currentClient:Client){
         let oponentClient:Client=this.findOpponent(currentClient);
         //this.broadcast({question:this.questions[this.countQuestion]});
-        this.broadcast({question:JSON.stringify(this.questions[this.countQuestion])});
+        this.broadcast({question:JSON.stringify(this.questions[this.countQuestion]),question_count:this.countQuestion});
     }
     private loadQuestions(){
         var contents = fs.readFileSync("questions/questions.json");
         // Define to JSON type
         var jsonContent:Array<Question> = JSON.parse(contents);
         this.questions=jsonContent;
-        console.log(this.questions);
+        //console.log(this.questions);
     }
 
 }

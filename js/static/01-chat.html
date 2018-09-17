@@ -57,18 +57,30 @@
       // listen to patches coming from the server
       room.onMessage.add(function(message) {
         var p = document.createElement("p");
+       // console.log(message);
         const key=Object.keys(message)[0];
         let m=message[key];
         if(message.userName)
            m=message.userName;
-        console.log(m);
-        p.innerHTML = m;
+        //console.log(m);
+        let h="";
+        for(let k in message){
+          h+=`${k}:${message[k]}`;
+        }
+        p.innerHTML = h;//m;
         document.querySelector("#messages").appendChild(p);
       });
       room.listen("players/:id/:prop", function(change) {
-        console.log(change);
-     
+        console.log(change);     
       });
+      room.listen("players/:id/:prop/:q", function(change) {
+        console.log("put money");
+        console.log(change);     
+      });
+      room.listen("questionCount",function(change){
+        console.log("count change");
+        console.log(change);
+      })
       // send message to room on submit
       document.querySelector("#form").onsubmit = function(e) {
         e.preventDefault();
@@ -87,7 +99,7 @@
         room.send({message:name});
       }
       function putMoney(){
-        room.send({put_money:parseInt(document.querySelector("#txtUserName").value)});
+        room.send({put_money:parseInt(document.querySelector("#txtUserName").value),question:1});
       }
       function myFunction() { 
      if((navigator.userAgent.indexOf("Opera") || navigator.userAgent.indexOf('OPR')) != -1 ) 
