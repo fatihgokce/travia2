@@ -15,13 +15,13 @@ enum PlayerState:byte
 class Player
 {
     public string SessionId { get; set; }
-    public Dictionary<string, int> putMoney { get; set; }
-    public Dictionary<string, bool> answer { get; set; }
+    public Dictionary<int, int> putMoney { get; set; }
+    public Dictionary<int, bool> answer { get; set; }
     public string name { get; set; }  
     public Player()
     {
-        putMoney = new Dictionary<string, int>();
-        answer = new Dictionary<string, bool>();
+        putMoney = new Dictionary<int, int>();
+        answer = new Dictionary<int, bool>();
     }
 }
 public class GameControl : MonoBehaviour {
@@ -62,7 +62,7 @@ public class GameControl : MonoBehaviour {
     Assets.Question questionTxt;
     float distanceLoadingPanel;
     List<GameObject> _listQuestions;
-    int questionCount=0;
+    int questionCount=1;
     void initBeforeQuestion(){
         var rs = ImgFooter.GetComponent<RectTransform>();
        
@@ -100,12 +100,7 @@ public class GameControl : MonoBehaviour {
     void Update()
     {     
     }
-    void BtnQuestionsToogleEnable(bool enable){
-        // var lists = GameObject.FindGameObjectsWithTag("btnPutMoney");
-        // foreach(var go in lists)
-        // {
-        //     go.GetComponent<Button>().enabled=enable;
-        // }
+    void BtnQuestionsToogleEnable(bool enable){     
         foreach(var btn in _listQuestions){
            btn.GetComponent<Button>().enabled=enable;
         }
@@ -115,7 +110,7 @@ public class GameControl : MonoBehaviour {
         var go = EventSystem.current.currentSelectedGameObject;
         var s= go.transform.transform.GetChild(0).GetComponent<Text>().text;
         playerState = PlayerState.PutMoney;
-        room.Send(new { put_money=int.Parse(s)});
+        room.Send(new { put_money=int.Parse(s),question_count=this.questionCount});
        
         initBeforeQuestion();
       
@@ -142,19 +137,17 @@ public class GameControl : MonoBehaviour {
     IEnumerator AddListeners()
     {
 
-        Debug.Log("start");
+       
       
         String uri = "ws://" + serverName + ":" + port;
         //Debug.Log(uri);
 
         client = new Client(uri);
         client.OnOpen += OnOpenHandler;
-        client.OnClose += (object sender, EventArgs e) => Debug.Log("CONNECTION CLOSED");
-
-        Debug.Log("Let's connect the client!");
+        client.OnClose += (object sender, EventArgs e) => Debug.Log("CONNECTION CLOSED");       
         //yield return StartCoroutine(client.Connect());
         StartCoroutine(client.Connect());
-        Debug.Log("Let's join the room!");
+       
         room = client.Join(roomName, new Dictionary<string, object>()
         {
             { "name", txtPlayerName.text }
@@ -171,6 +164,8 @@ public class GameControl : MonoBehaviour {
         room.Listen("players/:id", this.OnPlayerChange);
         room.Listen("players/:id/:prop", this.OnPlayerMove);
         room.Listen("players/:id/:prop/:q",this.OnPlayerChangeQuestion);
+        room.Listen("questionCount",this.OnQuestionChange);
+      
         //room.Listen("messages/:number", this.OnMessageAdded);
         //room.Listen(this.OnChangeFallback);
 
@@ -210,12 +205,17 @@ public class GameControl : MonoBehaviour {
         var message = (IndexedDictionary<string, object>) e.message;
         if(message==null)
            return;
-        Debug.Log("messa");
-        Debug.Log(message.Keys[0]);
+        Debug.Log("OnMessage");
+        // Debug.Log(message.Keys[0]);
         Debug.Log(e.message);
         foreach(var k in message.Keys)
         {
-          
+         
+            if(k == Assets.Keys.QuestionCount)
+            {
+                   Debug.Log("soru degisti:"+message[k].ToString());
+                this.questionCount=int.Parse(message[k].ToString());
+            }
             if (k == Assets.Keys.UserName)
             {
                 txtOpponentName.text = message[k].ToString();//e.message.ToString();
@@ -272,7 +272,7 @@ public class GameControl : MonoBehaviour {
         {
             txtMessagePanel3.text = "yanlış cevap";
         }
-        room.Send(new { answer = answer == questionTxt.correct });
+        room.Send(new { answer = answer == questionTxt.correct,question_count=this.questionCount });
         BtnQuestionsToogleEnable(false);
     }
     void OnStateChangeHandler(object sender, RoomUpdateEventArgs e)
@@ -292,45 +292,30 @@ public class GameControl : MonoBehaviour {
         //Debug.Log("client id:"+client.id);
         
         if (change.operation == "add")
-        {
-            //IndexedDictionary<string, object> value = (IndexedDictionary<string, object>)change.value;
-
-            //GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-
-            //cube.transform.position = new Vector3(Convert.ToSingle(value["x"]), Convert.ToSingle(value["y"]), 0);
-
-            // add "player" to map of players by id.
-            Player player = new Player { SessionId = change.path["id"] };
-           
-            //player.putMoney[this.questionCount.ToString()]=10;          
-            players.Add(change.path["id"], player);
-            Debug.Log("set put deneme");
-            // var ply=players[change.path["id"]];
-            // if(ply==null){
-            //     Debug.Log("null ply");
-            // }
-            //ply.putMoney["0"]=20;
-            //players[change.path["id"]].putMoney[this.questionCount.ToString()]=20;
+        {        
+            Player player = new Player { SessionId = change.path["id"] };                 
+            players.Add(change.path["id"], player);          
             clientCount++;
         }
         else if (change.operation == "remove")
         {
-            // remove player from scene
-            //GameObject cube;
-            //players.TryGetValue(change.path["id"], out cube);
-            //Destroy(cube);
-
             players.Remove(change.path["id"]);
             clientCount--;
+            Debug.Log("Game over");
             //game over
         }
     }
+    void OnQuestionChange(DataChange change)
+    {
+        Debug.Log("yeni soru:"+change.value);
+    }
     void OnPlayerChangeQuestion(DataChange change)
     {
-        Debug.Log("OnPlayerChangeQuestion");
-        Debug.Log(change.path["id"]);
-        Debug.Log(change.path["prop"]);
-        Debug.Log(change.value);
+        // Debug.Log("OnPlayerChangeQuestion");
+        // Debug.Log(change.path["id"]);
+        // Debug.Log(change.path["prop"]);
+        // Debug.Log(change.value);
+        string prop=change.path["prop"];
         //playerState == PlayerState.PutMoney 
         if (change.path["prop"]=="putMoney" && players.Count==2)
         {
@@ -338,15 +323,15 @@ public class GameControl : MonoBehaviour {
           
             int v=int.Parse(change.value.ToString());
           
-            players[change.path["id"]].putMoney[this.questionCount.ToString()]=v;//(int)change.value;
+            players[change.path["id"]].putMoney[this.questionCount]=v;//(int)change.value;
             bool tenderOver = true;
             
             foreach (var kvp in players)
             {
-                Debug.Log("into put money cc:"+kvp.Key);
+                // Debug.Log("into put money cc:"+kvp.Key);
                 var player= kvp.Value;
-                if(player.putMoney.ContainsKey(this.questionCount.ToString())){
-                    if (player.putMoney[questionCount.ToString()] == 0){
+                if(player.putMoney.ContainsKey(this.questionCount)){
+                    if (player.putMoney[questionCount] == 0){
                         tenderOver = false;
                         break;
                     }
@@ -364,13 +349,13 @@ public class GameControl : MonoBehaviour {
                 listPanels[0].SetActive(false);
                 listPanels[1].SetActive(true);
                 Player player = players[client.id];
-                Sprite myFruit = Resources.Load<Sprite>("images/"+player.putMoney);
+                Sprite myFruit = Resources.Load<Sprite>("images/"+player.putMoney[this.questionCount]);
                 ImgPanel2Player.GetComponent<Image>().sprite = myFruit;
-                ImgPanel2Player.GetComponent<Image>().GetComponentInChildren<Text>().text = player.putMoney.ToString();
+                ImgPanel2Player.GetComponent<Image>().GetComponentInChildren<Text>().text = player.putMoney[this.questionCount].ToString();
                 Player rival = FindRivalPlayer();
-                Sprite myFruit2 = Resources.Load<Sprite>("images/" + rival.putMoney);
+                Sprite myFruit2 = Resources.Load<Sprite>("images/" + rival.putMoney[this.questionCount]);
                 ImgPanel2Rival.GetComponent<Image>().sprite = myFruit2;
-                ImgPanel2Rival.GetComponent<Image>().GetComponentInChildren<Text>().text = rival.putMoney.ToString();
+                ImgPanel2Rival.GetComponent<Image>().GetComponentInChildren<Text>().text = rival.putMoney[this.questionCount].ToString();
                 Player mostPutMoneyPlayer = FindMostPutMoneyPlayer();
                 TxtMessagePanel2.text = "En çok parayı "+ mostPutMoneyPlayer.name+" koydu!";
               
@@ -378,25 +363,30 @@ public class GameControl : MonoBehaviour {
             }
         }
         else{
-            if(change.path["prop"]=="putMoney")
+            if(prop=="putMoney")
             {
                 var player=players[change.path["id"]];
                 if(player!=null)
                 {
-                    player.putMoney[this.questionCount.ToString()]=(int)change.value;
-                    Debug.Log("set player");
-                    Debug.Log(player);
+                    player.putMoney[this.questionCount]=(int)change.value;                 
                 }
+                
+            }
+            else if(prop=="answer") 
+            {
+                var player=players[change.path["id"]];
+                bool answer=bool.Parse(change.value.ToString());
+                player.answer[this.questionCount]=answer;
                 
             }
         }
     }
     void OnPlayerMove(DataChange change)
     {
-        Debug.Log("OnPlayerMove");
-        Debug.Log(change.path["id"]);
-        Debug.Log(change.path["prop"]);
-        Debug.Log(change.value);
+        // Debug.Log("OnPlayerMove");
+        // Debug.Log(change.path["id"]);
+        // Debug.Log(change.path["prop"]);
+        // Debug.Log(change.value);
         string prop= change.path["prop"];
         if(!String.IsNullOrEmpty(prop) && prop=="name")
         {
@@ -410,53 +400,7 @@ public class GameControl : MonoBehaviour {
                 Player player = players[change.path["id"]];
                 SetObjectProperty(change.path["prop"], change.value, player);
             }
-        }
-        //Debug.Log("OnPlayerMove");
-        //Debug.Log("playerId: " + change.path["id"] + ", prop: " + change.path["prop"]+" operation:"+change.operation);
-        //Debug.Log(change.value);
-        // if (change.operation == "add")
-        // {
-        //     Player player = players[change.path["id"]];           
-        //     SetObjectProperty(change.path["prop"], change.value, player);
-        // }
-        // else if (change.operation == "replace")
-        // {
-        //     Player player = players[change.path["id"]];
-        //     SetObjectProperty(change.path["prop"], change.value, player);
-        // }
-        // if (playerState == PlayerState.PutMoney && players.Count==2)
-        // {
-        //     //ihale bittimi kontrol ediliyor
-        //     Debug.Log("into put money cc:"+players.Count);
-        //     bool tenderOver = true;
-            
-        //     foreach (var kvp in players.ToArray())
-        //     {
-        //         var player= kvp.Value;
-        //         if (player.putMoney[questionCount.ToString()] == 0){
-        //             tenderOver = false;
-        //             break;
-        //         }
-        //     }
-        //     if (tenderOver)
-        //     {
-        //         playerState = PlayerState.TenderIsOver;
-        //         listPanels[0].SetActive(false);
-        //         listPanels[1].SetActive(true);
-        //         Player player = players[client.id];
-        //         Sprite myFruit = Resources.Load<Sprite>("images/"+player.putMoney);
-        //         ImgPanel2Player.GetComponent<Image>().sprite = myFruit;
-        //         ImgPanel2Player.GetComponent<Image>().GetComponentInChildren<Text>().text = player.putMoney.ToString();
-        //         Player rival = FindRivalPlayer();
-        //         Sprite myFruit2 = Resources.Load<Sprite>("images/" + rival.putMoney);
-        //         ImgPanel2Rival.GetComponent<Image>().sprite = myFruit2;
-        //         ImgPanel2Rival.GetComponent<Image>().GetComponentInChildren<Text>().text = rival.putMoney.ToString();
-        //         Player mostPutMoneyPlayer = FindMostPutMoneyPlayer();
-        //         TxtMessagePanel2.text = "En çok parayı "+ mostPutMoneyPlayer.name+" koydu!";
-        //         Debug.Log("neden calling");
-        //         StartCoroutine(ActivePanel3());
-        //     }
-        // }
+        }      
        
     }
     public IEnumerator ActivePanel3()
@@ -476,7 +420,7 @@ public class GameControl : MonoBehaviour {
         foreach (var kvp in players.ToArray())
         {
             var player = kvp.Value;
-            if (player.putMoney[questionCount.ToString()] > cplayer.putMoney[questionCount.ToString()])
+            if (player.putMoney[questionCount] > cplayer.putMoney[questionCount])
             {
                 return player;
             }

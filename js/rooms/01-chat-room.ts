@@ -1,5 +1,6 @@
-import { Room, Client } from "colyseus";
+import { Room, Client, Clock,Delayed } from "colyseus";
 import * as fs from 'fs';
+
 const Keys={
     userName:'userName',
     question:'question',
@@ -12,14 +13,17 @@ class Question{
     suggestions:Array<string>=[];   
     correct:number; 
 }
+const MAX_QUESTION=5;
 export class ChatRoom extends Room {
     // this room supports only 4 clients connected
     maxClients = 2;
     name:string="";
     questions:Array<Question>;
-    private countQuestion:number=0;
+    private countQuestion:number=1;    
     private questionSend=false;
-    private askedQuestions=[];
+    private askedQuestionIds=[];
+    private answredQuestions={};
+    private moveTimeOut:Delayed;
     onInit (options) {
        //console.log("BasicRoom created!", options);
         
@@ -44,11 +48,7 @@ export class ChatRoom extends Room {
             answer: {},
             putMoney:{}           
           };
-        // let that=this;
-        // this.clock.setTimeout(function(){
-        //     that.state.questionCount=1;
-        //     console.log("timer runned");
-        // },2000); 
+       //this.nextQuestion(2000);
         if(this.clients.length==2){        
             this.questionSend=true;
            
@@ -59,9 +59,7 @@ export class ChatRoom extends Room {
            
         
     }
-    nextQuestion(){
-
-    }
+   
     requestJoin (options: any) {
         //console.log("requst join");
         // Prevent the client from joining the same room from another browser tab
@@ -92,9 +90,14 @@ export class ChatRoom extends Room {
             console.log(this.state.players[client.id]);
         }
         if(data.hasOwnProperty('answer')){
-            console.log("içerde");
-            console.log(this.state.players[client.id]);
-            this.state.players[client.id].answer=data.answer;
+            console.log("answer");
+            let qc=data.question_count;
+            this.answredQuestions[qc]=qc;
+            if(qc==this.countQuestion){
+                this.countQuestion=this.countQuestion+1;
+                this.sendQuestion();                
+            }
+            this.state.players[client.id].answer[this.countQuestion]=data.answer;
         }
         if(data.hasOwnProperty('nextQuestion')){            
             this.countQuestion+=1;
@@ -108,7 +111,19 @@ export class ChatRoom extends Room {
     onDispose () {        
         console.log("Dispose BasicRoom1");
     }
-    findOpponent(currentClient:Client):Client{
+
+    private nextQuestion(time:number){
+        let that=this;
+        if(this.moveTimeOut)
+            this.moveTimeOut.clear();
+        this.moveTimeOut=this.clock.setTimeout(function(){
+            //that.state.questionCount=1;
+            that.countQuestion+=1;
+            that.sendQuestion();
+            console.log("timer runned");
+        },time); 
+    }
+    private findOpponent(currentClient:Client):Client{
         return this.clients.find(cli=>{
             return cli.id!=currentClient.id
         });
@@ -119,10 +134,16 @@ export class ChatRoom extends Room {
       
         this.send(currentClient,{userName:this.state.players[oponentClient.id].name});
     }
-    private sendQuestion(currentClient:Client){
-        let oponentClient:Client=this.findOpponent(currentClient);
+    private sendQuestion(){
+        //let oponentClient:Client=this.findOpponent(currentClient);
         //this.broadcast({question:this.questions[this.countQuestion]});
-        this.broadcast({question:JSON.stringify(this.questions[this.countQuestion]),question_count:this.countQuestion});
+        let id=this.countQuestion;
+        if(id>=5){
+            id=0;
+        }
+        
+        this.broadcast({question:JSON.stringify(this.questions[id]),question_count:this.countQuestion});
+        this.nextQuestion(15000);
     }
     private loadQuestions(){
         var contents = fs.readFileSync("questions/questions.json");

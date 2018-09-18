@@ -19,5 +19,20 @@
       "question": "Aşağıdakilerden hangisi ressam değildir?",
       "suggestions": ["Monet","Collina","Leonardo Da Vinci","Rafael"],
       "correct":2
-  }
+    },
+    {
+      "Id": 4,
+      "order": 2,
+      "question": "ROM açılımı nedir?",
+      "suggestions": ["Read Only Memory","Reach Access Memory","Redirect Adaqute Memory","Read Only Memory"],
+      "correct":1
+    },
+    {
+      "Id": 5,
+      "order": 2,
+      "question": "Bir maddenin sıvı halden katı hale geçmesine ne ad verilir?",
+      "suggestions": ["Donma","Erime","Buharlaşma","Süblimleşme"],
+      "correct":1
+    }
+
 ]

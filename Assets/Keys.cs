@@ -10,6 +10,7 @@ namespace Assets
         public static  readonly string Message="message";
         public static  readonly string UserName = "userName";
         public static readonly string Question = "question";
+        public static readonly string QuestionCount="question_count";
     }
     [Serializable]
     public class Question

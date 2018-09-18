@@ -38,7 +38,7 @@
       let name=myFunction();
       console.log(name);
       var room = client.join("chat",{name:name});
-     
+      let qcount=0;
       room.onJoin.add(function () {
         console.log("joined");
          
@@ -66,6 +66,10 @@
         let h="";
         for(let k in message){
           h+=`${k}:${message[k]}`;
+          if(k=="question_count")
+          {
+            qcount=parseInt(message[k]);
+          }
         }
         p.innerHTML = h;//m;
         document.querySelector("#messages").appendChild(p);
@@ -90,8 +94,14 @@
         console.log("input:", input.value);
 
         // send data to room
-        room.send({ message: input.value });
-
+        //room.send({ message: input.value });
+        let ans=true;
+        if(input.value==1){
+          ans=true;
+        }else{
+          ans=false;
+        }
+        room.send({ answer:ans,question_count:qcount });
         // clear input
         input.value = "";
       }
