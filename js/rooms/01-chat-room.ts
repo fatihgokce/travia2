@@ -53,7 +53,7 @@ export class ChatRoom extends Room {
             this.questionSend=true;
            
             this.sendMessageToOpponent({userName:options.name},client);
-            this.sendQuestion(client);
+            this.sendQuestion();
             
         }
            
@@ -78,26 +78,30 @@ export class ChatRoom extends Room {
         //console.log("BasicRoom received message from", client.sessionId, ":", data);
         //console.log(this.state);
         //this.broadcast(`(${ client.sessionId }) ${ data.message }`);
-       console.log(data);
+        //console.log(data);
         if(data.hasOwnProperty('message')){
             //Send a message to a particular client.
             this.send(this.findOpponent(client),{message:data.message});
             //this.broadcast(`${this.state.players[client.sessionId].name} `+data.message);
         }
-        if(data.hasOwnProperty('put_money')){   
-                  
-            this.state.players[client.id].putMoney[this.countQuestion]=data.put_money;
-            console.log(this.state.players[client.id]);
+        if(data.hasOwnProperty('put_money')){
+            let qc=data.question_count;   
+            console.log("put money for:"+this.state.players[client.id].name+" qc:"+qc+" time:"+new Date());    
+            this.state.players[client.id].putMoney[qc]=data.put_money;
+            if(this.allPlayerSetMoneyForQuestion(this.countQuestion))
+                this.nextQuestion(15000);         
         }
-        if(data.hasOwnProperty('answer')){
-            console.log("answer");
+        if(data.hasOwnProperty('answer')){          
             let qc=data.question_count;
+            console.log("answer  for:"+this.state.players[client.id].name+" qc:"+qc+" question count:"+this.countQuestion+" time:"+new Date());    
             this.answredQuestions[qc]=qc;
-            if(qc==this.countQuestion){
+            if(qc==this.countQuestion){                
                 this.countQuestion=this.countQuestion+1;
-                this.sendQuestion();                
+                console.log("question count increase :"+this.countQuestion);               
+                this.sendQuestion(); 
+                     
             }
-            this.state.players[client.id].answer[this.countQuestion]=data.answer;
+            this.state.players[client.id].answer[qc]=data.answer;
         }
         if(data.hasOwnProperty('nextQuestion')){            
             this.countQuestion+=1;
@@ -111,16 +115,34 @@ export class ChatRoom extends Room {
     onDispose () {        
         console.log("Dispose BasicRoom1");
     }
-
+    private allPlayerSetMoneyForQuestion(questionCount:number){
+        let res=true;
+        for(let i=0;i<this.clients.length;i++){
+            let p=this.clients[i];
+            if(!this.state.players[p.id].putMoney.hasOwnProperty(questionCount)){
+                res=false;
+                break;
+            }
+        }
+        return res;
+    }
     private nextQuestion(time:number){
         let that=this;
         if(this.moveTimeOut)
             this.moveTimeOut.clear();
         this.moveTimeOut=this.clock.setTimeout(function(){
             //that.state.questionCount=1;
-            that.countQuestion+=1;
-            that.sendQuestion();
-            console.log("timer runned");
+            //before asked question make control for answered 
+            let putMoneyFor=that.allPlayerSetMoneyForQuestion(that.countQuestion);
+            console.log("control for next question:"+that.countQuestion+" time:"+new Date());
+            console.log("allPlayerSetMoneyForQuestion:"+putMoneyFor);
+            console.log("allPlayerSetMoneyForQuestion:"+putMoneyFor);
+            if(!that.answredQuestions.hasOwnProperty(`${that.countQuestion}`) && putMoneyFor==true){
+                that.countQuestion+=1;
+                that.sendQuestion();
+                console.log("timer runned");
+            }
+           
         },time); 
     }
     private findOpponent(currentClient:Client):Client{
@@ -137,13 +159,13 @@ export class ChatRoom extends Room {
     private sendQuestion(){
         //let oponentClient:Client=this.findOpponent(currentClient);
         //this.broadcast({question:this.questions[this.countQuestion]});
+        console.log("send question:"+this.countQuestion+" time:"+new Date());
         let id=this.countQuestion;
         if(id>=5){
             id=0;
-        }
-        
+        }        
         this.broadcast({question:JSON.stringify(this.questions[id]),question_count:this.countQuestion});
-        this.nextQuestion(15000);
+       
     }
     private loadQuestions(){
         var contents = fs.readFileSync("questions/questions.json");

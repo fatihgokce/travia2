@@ -63,9 +63,11 @@ public class GameControl : MonoBehaviour {
     float distanceLoadingPanel;
     List<GameObject> _listQuestions;
     int questionCount=1;
+    List<Button> _listBtnPutMoney;
+    bool _timerRunnable=true;
     void initBeforeQuestion(){
-        var rs = ImgFooter.GetComponent<RectTransform>();
-       
+         _timerRunnable=false;
+        var rs = ImgFooter.GetComponent<RectTransform>();       
         ImgFooter.transform.localPosition = new Vector3(ImgFooter.transform.localPosition.x,-565.7f, 0);
 
         rs.sizeDelta = new Vector2(rs.sizeDelta.x, 65.5f);
@@ -74,11 +76,15 @@ public class GameControl : MonoBehaviour {
         listPanels[2].SetActive(false);
         //room.Send(new { nextQuestion = true });
         txtQuestion.text="Önce para sonra soru!";
-      
+        _listBtnPutMoney.ForEach(btn=>{
+            btn.enabled=true;
+        });
+       
     }
     void Start()
     {
         _listQuestions = new List<GameObject>();
+        _listBtnPutMoney = new List<Button>();
         Vector3 vec2 = ImgFooter.transform.localPosition;
         vec2.y = 169.6f;
         distanceLoadingPanel = Vector3.Distance(ImgFooter.transform.localPosition,vec2)-65.5f/2;       
@@ -88,7 +94,9 @@ public class GameControl : MonoBehaviour {
         var lists = GameObject.FindGameObjectsWithTag("btnPutMoney");
         foreach(var go in lists)
         {
-            go.GetComponent<Button>().onClick.AddListener(BtnPutMoney);
+            var btn=go.GetComponent<Button>();          
+            btn.onClick.AddListener(BtnClickPutMoney);
+            _listBtnPutMoney.Add(btn);
         }
         //Sprite myFruit = Resources.Load<Sprite>("images/15");
      
@@ -105,14 +113,17 @@ public class GameControl : MonoBehaviour {
            btn.GetComponent<Button>().enabled=enable;
         }
     }
-    void BtnPutMoney()
+    void BtnClickPutMoney()
     {
         var go = EventSystem.current.currentSelectedGameObject;
         var s= go.transform.transform.GetChild(0).GetComponent<Text>().text;
         playerState = PlayerState.PutMoney;
         room.Send(new { put_money=int.Parse(s),question_count=this.questionCount});
-       
+        BtnQuestionsToogleEnable(true);
         initBeforeQuestion();
+        _listBtnPutMoney.ForEach(btn=>{
+            btn.enabled=false;
+        });
       
     }
     public IEnumerator StartCountdown(Text textBox,float countdownValue = 10)
@@ -120,7 +131,8 @@ public class GameControl : MonoBehaviour {
         currCountdownValue = countdownValue;
         while (currCountdownValue > 0)
         {
-           
+            if(_timerRunnable==false)
+                break;         
             var rs = ImgFooter.GetComponent<RectTransform>();
             //rT.sizeDelta = new Vector2(rT.sizeDelta.x, rT.sizeDelta.y + 0.5f);
             float incAmount = distanceLoadingPanel/countdownValue;
@@ -135,9 +147,7 @@ public class GameControl : MonoBehaviour {
         initBeforeQuestion();
     }
     IEnumerator AddListeners()
-    {
-
-       
+    {    
       
         String uri = "ws://" + serverName + ":" + port;
         //Debug.Log(uri);
@@ -226,6 +236,7 @@ public class GameControl : MonoBehaviour {
             }
             if (k == Assets.Keys.Question)
             {
+                this.initBeforeQuestion();
                 questionTxt = JsonUtility.FromJson<Assets.Question>(message[k].ToString());
                 
                 Debug.Log(questionTxt.question);
@@ -243,16 +254,15 @@ public class GameControl : MonoBehaviour {
                     btnQ.GetComponent<RectTransform>().SetParent(canvas.transform);
                     btnQ.GetComponent<RectTransform>().localPosition=pos;                    
                     int index2 = index;
-                    btnQ.GetComponent<Button>().onClick.AddListener(delegate {
-                        
+                    var btn=btnQ.GetComponent<Button>();
+                    btn.enabled=false;
+                    btn.onClick.AddListener(delegate {                        
                         BtnQuestionClick(index2,btnQ);
-                    }
-                    );
-                        index++;
+                    });
+                    index++;
                     btnQ.transform.GetChild(0).GetComponent<Text>().text = q;
                     _listQuestions.Add(btnQ);
-                    amount -= 130;
-                   
+                    amount -= 130;                   
                 }
             }
         }
@@ -358,7 +368,7 @@ public class GameControl : MonoBehaviour {
                 ImgPanel2Rival.GetComponent<Image>().GetComponentInChildren<Text>().text = rival.putMoney[this.questionCount].ToString();
                 Player mostPutMoneyPlayer = FindMostPutMoneyPlayer();
                 TxtMessagePanel2.text = "En çok parayı "+ mostPutMoneyPlayer.name+" koydu!";
-              
+                _timerRunnable=true;
                 StartCoroutine(ActivePanel3());
             }
         }
@@ -412,7 +422,7 @@ public class GameControl : MonoBehaviour {
         Player mostPutMoneyPlayer = FindMostPutMoneyPlayer();
         txtMessagePanel3.text = mostPutMoneyPlayer.name + " için soru geliyor...";
         txtQuestion.text = questionTxt.question;
-        StartCoroutine(StartCountdown(txtTimerPane3, 20));
+        StartCoroutine(StartCountdown(txtTimerPane3, 15));
     }
     private Player FindMostPutMoneyPlayer()
     {

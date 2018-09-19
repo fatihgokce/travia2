@@ -109,7 +109,7 @@
         room.send({message:name});
       }
       function putMoney(){
-        room.send({put_money:parseInt(document.querySelector("#txtUserName").value),question:1});
+        room.send({put_money:parseInt(document.querySelector("#txtUserName").value),question_count:qcount});
       }
       function myFunction() { 
      if((navigator.userAgent.indexOf("Opera") || navigator.userAgent.indexOf('OPR')) != -1 ) 
