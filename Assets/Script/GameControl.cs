@@ -126,7 +126,7 @@ public class GameControl : MonoBehaviour {
         });
       
     }
-    public IEnumerator StartCountdown(Text textBox,float countdownValue = 10)
+    IEnumerator StartCountdown(Text textBox,float countdownValue = 10)
     {
         currCountdownValue = countdownValue;
         while (currCountdownValue > 0)
@@ -144,7 +144,14 @@ public class GameControl : MonoBehaviour {
             currCountdownValue--;
             yield return new WaitForSeconds(1.0f);
         }
-        initBeforeQuestion();
+        //initBeforeQuestion();
+    }
+    IEnumerator WaitDo(float seconds,Action afterDo)
+    {
+        yield return new WaitForSeconds(seconds);
+        if(afterDo != null)
+            afterDo();
+
     }
     IEnumerator AddListeners()
     {    
@@ -223,7 +230,7 @@ public class GameControl : MonoBehaviour {
          
             if(k == Assets.Keys.QuestionCount)
             {
-                   Debug.Log("soru degisti:"+message[k].ToString());
+                Debug.Log("soru degisti:"+message[k].ToString());
                 this.questionCount=int.Parse(message[k].ToString());
             }
             if (k == Assets.Keys.UserName)
@@ -273,17 +280,10 @@ public class GameControl : MonoBehaviour {
     void BtnQuestionClick(int answer,GameObject btn)
     {
         Debug.Log(answer);
-        btn.GetComponent<Image>().color=Color.green;
-        if (answer == questionTxt.correct)
-        {
-            txtMessagePanel3.text = "doğru cevap";
-        }
-        else
-        {
-            txtMessagePanel3.text = "yanlış cevap";
-        }
-        room.Send(new { answer = answer == questionTxt.correct,question_count=this.questionCount });
-        BtnQuestionsToogleEnable(false);
+        bool isTrue = answer == questionTxt.correct;
+        
+        btn.GetComponent<Image>().color = isTrue ? Color.green : Color.red;       
+        room.Send(new { answer = isTrue,question_count=this.questionCount });       
     }
     void OnStateChangeHandler(object sender, RoomUpdateEventArgs e)
     {
@@ -357,7 +357,7 @@ public class GameControl : MonoBehaviour {
                 Debug.Log("ihale bitti");
                 playerState = PlayerState.TenderIsOver;
                 listPanels[0].SetActive(false);
-                listPanels[1].SetActive(true);
+                listPanels[1].SetActive(true);              
                 Player player = players[client.id];
                 Sprite myFruit = Resources.Load<Sprite>("images/"+player.putMoney[this.questionCount]);
                 ImgPanel2Player.GetComponent<Image>().sprite = myFruit;
@@ -367,6 +367,10 @@ public class GameControl : MonoBehaviour {
                 ImgPanel2Rival.GetComponent<Image>().sprite = myFruit2;
                 ImgPanel2Rival.GetComponent<Image>().GetComponentInChildren<Text>().text = rival.putMoney[this.questionCount].ToString();
                 Player mostPutMoneyPlayer = FindMostPutMoneyPlayer();
+                if(mostPutMoneyPlayer.SessionId != player.SessionId)
+                {
+                    BtnQuestionsToogleEnable(false);
+                }
                 TxtMessagePanel2.text = "En çok parayı "+ mostPutMoneyPlayer.name+" koydu!";
                 _timerRunnable=true;
                 StartCoroutine(ActivePanel3());
@@ -384,9 +388,22 @@ public class GameControl : MonoBehaviour {
             }
             else if(prop=="answer") 
             {
+                Debug.Log("panel3 enable:"+listPanels[2].active);
+                BtnQuestionsToogleEnable(false);
                 var player=players[change.path["id"]];
                 bool answer=bool.Parse(change.value.ToString());
-                player.answer[this.questionCount]=answer;
+                player.answer[this.questionCount]=answer;              
+                _timerRunnable=false;
+                if (answer)
+                {
+                    txtMessagePanel3.text = player.name +" doğru bildi";
+                }
+                else
+                {
+                    txtMessagePanel3.text = player.name+" yanlış bildi";
+                }
+                Action act = () =>{ initBeforeQuestion(); };
+                WaitDo(8000,act);
                 
             }
         }
@@ -415,7 +432,7 @@ public class GameControl : MonoBehaviour {
     }
     public IEnumerator ActivePanel3()
     {
-        Debug.Log("neden called");
+       
         yield return new WaitForSeconds(2.0f);
         listPanels[1].SetActive(false);
         listPanels[2].SetActive(true);

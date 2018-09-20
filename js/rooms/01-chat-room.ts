@@ -24,6 +24,7 @@ export class ChatRoom extends Room {
     private askedQuestionIds=[];
     private answredQuestions={};
     private moveTimeOut:Delayed;
+    private tempTimeOut:Delayed;
     onInit (options) {
        //console.log("BasicRoom created!", options);
         
@@ -88,17 +89,37 @@ export class ChatRoom extends Room {
             let qc=data.question_count;   
             console.log("put money for:"+this.state.players[client.id].name+" qc:"+qc+" time:"+new Date());    
             this.state.players[client.id].putMoney[qc]=data.put_money;
-            if(this.allPlayerSetMoneyForQuestion(this.countQuestion))
-                this.nextQuestion(15000);         
+            if(this.allPlayerSetMoneyForQuestion(this.countQuestion)){
+              
+                if(this.answredQuestions.hasOwnProperty(`${this.countQuestion-1}`)){
+                    //check did you answer the previous question
+                    // added 3 seconds for informatio about which one win
+                    console.log("next wait 18000");
+                    this.nextQuestion(18000);
+                }else{
+                    //added 2 second information 
+                    console.log("next wait 15000");
+                    this.nextQuestion(17000);  
+                }
+               
+            }
+                       
         }
         if(data.hasOwnProperty('answer')){          
             let qc=data.question_count;
             console.log("answer  for:"+this.state.players[client.id].name+" qc:"+qc+" question count:"+this.countQuestion+" time:"+new Date());    
             this.answredQuestions[qc]=qc;
-            if(qc==this.countQuestion){                
+            if(qc==this.countQuestion){
                 this.countQuestion=this.countQuestion+1;
-                console.log("question count increase :"+this.countQuestion);               
-                this.sendQuestion(); 
+                let that = this;
+                if(this.tempTimeOut)
+                   this.tempTimeOut.clear();
+                this.tempTimeOut = this.clock.setTimeout(()=>{
+                    console.log("question count increase :"+that.countQuestion);               
+                    that.sendQuestion(); 
+                },3000);              
+               
+               
                      
             }
             this.state.players[client.id].answer[qc]=data.answer;
