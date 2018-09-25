@@ -17,7 +17,8 @@ class Player
     public string SessionId { get; set; }
     public Dictionary<int, int> putMoney { get; set; }
     public Dictionary<int, bool> answer { get; set; }
-    public string name { get; set; }  
+    public string name { get; set; }
+    public int money{get;set;}  
     public Player()
     {
         putMoney = new Dictionary<int, int>();
@@ -30,6 +31,8 @@ public class GameControl : MonoBehaviour {
 
     Client client;
     Room room;
+    public Text txtPlayerScore;
+    public Text txtRivalScore;
     public Text txtPlayerName;
     public Text txtOpponentName;
     public Text txtMessage;
@@ -99,8 +102,8 @@ public class GameControl : MonoBehaviour {
             _listBtnPutMoney.Add(btn);
         }
         //Sprite myFruit = Resources.Load<Sprite>("images/15");
-     
-       
+        txtPlayerScore.text = "321";
+        txtRivalScore.text = "neden";
         StartCoroutine("AddListeners");
     }
 
@@ -153,6 +156,18 @@ public class GameControl : MonoBehaviour {
             afterDo();
 
     }
+    void SetTextMoney(Player player)
+    {
+        if(player.SessionId == client.id)
+        {
+            txtPlayerScore.text = player.money.ToString();
+        }
+        else
+        {
+            txtRivalScore.text = player.money.ToString();
+        }
+
+    }
     IEnumerator AddListeners()
     {    
       
@@ -179,7 +194,7 @@ public class GameControl : MonoBehaviour {
         room.OnStateChange += OnStateChangeHandler;
 
         room.Listen("players/:id", this.OnPlayerChange);
-        room.Listen("players/:id/:prop", this.OnPlayerMove);
+        room.Listen("players/:id/:prop", this.OnPropChange);
         room.Listen("players/:id/:prop/:q",this.OnPlayerChangeQuestion);
         room.Listen("questionCount",this.OnQuestionChange);
       
@@ -222,15 +237,14 @@ public class GameControl : MonoBehaviour {
         var message = (IndexedDictionary<string, object>) e.message;
         if(message==null)
            return;
-        Debug.Log("OnMessage");
+        //Debug.Log("OnMessage");
         // Debug.Log(message.Keys[0]);
-        Debug.Log(e.message);
+        
         foreach(var k in message.Keys)
         {
          
             if(k == Assets.Keys.QuestionCount)
             {
-                Debug.Log("soru degisti:"+message[k].ToString());
                 this.questionCount=int.Parse(message[k].ToString());
             }
             if (k == Assets.Keys.UserName)
@@ -246,7 +260,7 @@ public class GameControl : MonoBehaviour {
                 this.initBeforeQuestion();
                 questionTxt = JsonUtility.FromJson<Assets.Question>(message[k].ToString());
                 
-                Debug.Log(questionTxt.question);
+                //Debug.Log(questionTxt.question);
                 int amount = 0;//-130;
                 int index = 1;
                 foreach(var btn in _listQuestions){
@@ -279,7 +293,7 @@ public class GameControl : MonoBehaviour {
     }
     void BtnQuestionClick(int answer,GameObject btn)
     {
-        Debug.Log(answer);
+        //Debug.Log(answer);
         bool isTrue = answer == questionTxt.correct;
         
         btn.GetComponent<Image>().color = isTrue ? Color.green : Color.red;       
@@ -303,9 +317,10 @@ public class GameControl : MonoBehaviour {
         
         if (change.operation == "add")
         {        
-            Player player = new Player { SessionId = change.path["id"] };                 
-            players.Add(change.path["id"], player);          
+            Player player = new Player { SessionId = change.path["id"] };             
+            players.Add(change.path["id"], player);  
             clientCount++;
+            Debug.Log("player count:"+clientCount);        
         }
         else if (change.operation == "remove")
         {
@@ -321,11 +336,13 @@ public class GameControl : MonoBehaviour {
     }
     void OnPlayerChangeQuestion(DataChange change)
     {
-        // Debug.Log("OnPlayerChangeQuestion");
-        // Debug.Log(change.path["id"]);
-        // Debug.Log(change.path["prop"]);
-        // Debug.Log(change.value);
+        Debug.Log("OnPlayerChangeQuestion");
+        Debug.Log(change.path["id"]);
+        Debug.Log(change.path["prop"]);
+        Debug.Log(change.value);
         string prop=change.path["prop"];
+        // Debug.Log("OnPlayerChangeQuestion");
+        // Debug.Log("prop:"+prop);
         //playerState == PlayerState.PutMoney 
         if (change.path["prop"]=="putMoney" && players.Count==2)
         {
@@ -388,7 +405,7 @@ public class GameControl : MonoBehaviour {
             }
             else if(prop=="answer") 
             {
-                Debug.Log("panel3 enable:"+listPanels[2].active);
+              
                 BtnQuestionsToogleEnable(false);
                 var player=players[change.path["id"]];
                 bool answer=bool.Parse(change.value.ToString());
@@ -406,26 +423,45 @@ public class GameControl : MonoBehaviour {
                 WaitDo(8000,act);
                 
             }
+            else if(prop == "money")
+            {
+                 var player=players[change.path["id"]];
+                 SetTextMoney(player);
+            }
         }
     }
-    void OnPlayerMove(DataChange change)
+    void OnPropChange(DataChange change)
     {
-        // Debug.Log("OnPlayerMove");
-        // Debug.Log(change.path["id"]);
-        // Debug.Log(change.path["prop"]);
-        // Debug.Log(change.value);
+    
         string prop= change.path["prop"];
-        if(!String.IsNullOrEmpty(prop) && prop=="name")
+        if(!String.IsNullOrEmpty(prop) && (prop=="name" || prop=="money"))
         {
+            
             if (change.operation == "add")
             {
                 Player player = players[change.path["id"]];           
-                SetObjectProperty(change.path["prop"], change.value, player);
+                switch (prop)
+                {
+                    case "name":
+                    player.name = change.value.ToString();
+                    break;
+                    case "money":
+                    player.money = int.Parse(change.value.ToString());
+                    SetTextMoney(player);
+                    break;
+                }
+                //SetObjectProperty(change.path["prop"], change.value, player);
             }
             else if (change.operation == "replace")
             {
+                Debug.Log("OnPropChange replace");
+                Debug.Log("OnPropChange");
+                Debug.Log(change.path["id"]);
+                Debug.Log(change.path["prop"]);
+                Debug.Log(change.value);
                 Player player = players[change.path["id"]];
                 SetObjectProperty(change.path["prop"], change.value, player);
+                SetTextMoney(player);
             }
         }      
        
@@ -474,7 +510,10 @@ public class GameControl : MonoBehaviour {
         // make sure object has the property we are after
         if (propertyInfo != null)
         {
-            propertyInfo.SetValue(obj, value, null);
+            Debug.Log("set property");
+            Debug.Log("pname:"+propertyName+" value:"+value);
+            propertyInfo.SetValue(obj, value,null);
+            Debug.Log("set oldu");
         }
     }
     void OnPlayerRemoved(DataChange change)

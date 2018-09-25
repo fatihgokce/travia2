@@ -47,20 +47,16 @@ export class ChatRoom extends Room {
         this.state.players[client.id] = {
             name: options.name,
             answer: {},
-            putMoney:{}           
+            putMoney:{},
+            money:5000           
           };
        //this.nextQuestion(2000);
-        if(this.clients.length==2){        
+        if(this.clients.length == this.maxClients){        
             this.questionSend=true;
-           
             this.sendMessageToOpponent({userName:options.name},client);
             this.sendQuestion();
-            
         }
-           
-        
     }
-   
     requestJoin (options: any) {
         //console.log("requst join");
         // Prevent the client from joining the same room from another browser tab
@@ -72,7 +68,6 @@ export class ChatRoom extends Room {
         delete this.state.players[client.id];
         console.log(`${client.id} leave roo`);
         //this.disconnect();
-       
     }
 
     onMessage (client:Client, data:object) {
@@ -109,6 +104,11 @@ export class ChatRoom extends Room {
             let qc=data.question_count;
             console.log("answer  for:"+this.state.players[client.id].name+" qc:"+qc+" question count:"+this.countQuestion+" time:"+new Date());    
             this.answredQuestions[qc]=qc;
+            let multiply = data["answer"]==true ? 1 : -1;
+            let money = this.state.players[client.id].money;
+            const putMoney=this.state.players[client.id].putMoney[qc];
+            money = money + putMoney * multiply ;
+            this.state.players[client.id].money = money ;
             if(qc==this.countQuestion){
                 this.countQuestion=this.countQuestion+1;
                 let that = this;
